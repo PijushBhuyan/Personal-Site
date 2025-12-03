@@ -7,7 +7,7 @@
 <style>
   body {
     margin: 0;
-    font-family: sans-serif;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
     background: #111;
     color: #eee;
     display: flex;
@@ -16,22 +16,26 @@
     padding: 20px;
   }
 
+  h1 { margin: 8px 0 16px; font-size: 20px; }
+
   .tabs {
     display: flex;
     width: 100%;
-    max-width: 500px;
+    max-width: 540px;
     justify-content: space-around;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   .tab {
     flex: 1;
-    padding: 12px;
+    padding: 10px;
     text-align: center;
     background: #222;
     color: #ccc;
     border-radius: 10px;
     margin: 4px;
     cursor: pointer;
+    user-select: none;
+    font-weight: 600;
   }
   .tab.active {
     background: #4a90e2;
@@ -39,39 +43,52 @@
   }
 
   #card {
-    font-size: 100px;
+    font-size: clamp(56px, 12vw, 120px);
     background: #222;
-    padding: 50px;
+    padding: 40px;
     border-radius: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    width: 90%;
-    max-width: 400px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+    width: 92%;
+    max-width: 420px;
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
   }
 
   #romaji {
-    font-size: 32px;
+    font-size: 22px;
     color: #aaa;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
   }
 
   .buttons {
     display: flex;
     flex-direction: column;
-    width: 90%;
-    max-width: 400px;
-    gap: 12px;
+    width: 92%;
+    max-width: 420px;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
   }
 
   button {
-    padding: 14px;
-    font-size: 18px;
+    padding: 12px;
+    font-size: 16px;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     background: #4a90e2;
     color: white;
     cursor: pointer;
+    flex: 1;
+  }
+
+  @media (max-width:420px){
+    .tabs { gap: 6px; }
+    .tab { padding: 8px; font-size: 14px; }
+    #card { padding: 28px; }
   }
 </style>
 </head>
@@ -90,18 +107,26 @@
 <div id="romaji"></div>
 
 <div class="buttons">
-  <button onclick="nextCard()">Next</button>
-  <button onclick="playAudio(currentKana)">Play Audio</button>
+  <div class="controls">
+    <button onclick="nextCard()">Next</button>
+    <button onclick="playAudio(currentKana)">Play Audio</button>
+  </div>
 </div>
 
 <script>
+// Expanded kana maps including dakuten (voiced) and handakuten (p- sounds)
 const hiragana = {
   'a':'あ','i':'い','u':'う','e':'え','o':'お',
   'ka':'か','ki':'き','ku':'く','ke':'け','ko':'こ',
+  'ga':'が','gi':'ぎ','gu':'ぐ','ge':'げ','go':'ご',
   'sa':'さ','shi':'し','su':'す','se':'せ','so':'そ',
+  'za':'ざ','ji':'じ','zu':'ず','ze':'ぜ','zo':'ぞ',
   'ta':'た','chi':'ち','tsu':'つ','te':'て','to':'と',
+  'da':'だ','di':'ぢ','du':'づ','de':'で','do':'ど',
   'na':'な','ni':'に','nu':'ぬ','ne':'ね','no':'の',
   'ha':'は','hi':'ひ','fu':'ふ','he':'へ','ho':'ほ',
+  'ba':'ば','bi':'び','bu':'ぶ','be':'べ','bo':'ぼ',
+  'pa':'ぱ','pi':'ぴ','pu':'ぷ','pe':'ぺ','po':'ぽ',
   'ma':'ま','mi':'み','mu':'む','me':'め','mo':'も',
   'ya':'や','yu':'ゆ','yo':'よ',
   'ra':'ら','ri':'り','ru':'る','re':'れ','ro':'ろ',
@@ -111,17 +136,24 @@ const hiragana = {
 const katakana = {
   'a':'ア','i':'イ','u':'ウ','e':'エ','o':'オ',
   'ka':'カ','ki':'キ','ku':'ク','ke':'ケ','ko':'コ',
+  'ga':'ガ','gi':'ギ','gu':'グ','ge':'ゲ','go':'ゴ',
   'sa':'サ','shi':'シ','su':'ス','se':'セ','so':'ソ',
+  'za':'ザ','ji':'ジ','zu':'ズ','ze':'ゼ','zo':'ゾ',
   'ta':'タ','chi':'チ','tsu':'ツ','te':'テ','to':'ト',
+  'da':'ダ','di':'ヂ','du':'ヅ','de':'デ','do':'ド',
   'na':'ナ','ni':'ニ','nu':'ヌ','ne':'ネ','no':'ノ',
   'ha':'ハ','hi':'ヒ','fu':'フ','he':'ヘ','ho':'ホ',
+  'ba':'バ','bi':'ビ','bu':'ブ','be':'ベ','bo':'ボ',
+  'pa':'パ','pi':'ピ','pu':'プ','pe':'ペ','po':'ポ',
   'ma':'マ','mi':'ミ','mu':'ム','me':'メ','mo':'モ',
   'ya':'ヤ','yu':'ユ','yo':'ヨ',
   'ra':'ラ','ri':'リ','ru':'ル','re':'レ','ro':'ロ',
   'wa':'ワ','wo':'ヲ','n':'ン'
 };
 
+// Youon set contains both hiragana youon and katakana youon (katakana keys have _k suffix)
 const youon = {
+  // hiragana youon
   'kya':'きゃ','kyu':'きゅ','kyo':'きょ',
   'gya':'ぎゃ','gyu':'ぎゅ','gyo':'ぎょ',
   'sha':'しゃ','shu':'しゅ','sho':'しょ',
@@ -133,7 +165,7 @@ const youon = {
   'pya':'ぴゃ','pyu':'ぴゅ','pyo':'ぴょ',
   'mya':'みゃ','myu':'みゅ','myo':'みょ',
   'rya':'りゃ','ryu':'りゅ','ryo':'りょ',
-
+  // katakana youon (keys marked with _k)
   'kya_k':'キャ','kyu_k':'キュ','kyo_k':'キョ',
   'gya_k':'ギャ','gyu_k':'ギュ','gyo_k':'ギョ',
   'sha_k':'シャ','shu_k':'シュ','sho_k':'ショ',
@@ -176,11 +208,16 @@ function nextCard() {
 }
 
 function playAudio(kana) {
+  // speak the kana using the browser TTS (ja-JP). If unavailable, falls back to default voice.
   const utter = new SpeechSynthesisUtterance(kana);
   utter.lang = 'ja-JP';
+  // shorter rate for single syllables
+  utter.rate = 0.9;
+  speechSynthesis.cancel();
   speechSynthesis.speak(utter);
 }
 
+// Start
 nextCard();
 </script>
 </body>
