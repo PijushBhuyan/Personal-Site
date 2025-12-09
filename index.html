@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Kana Flashcards</title>
+
 <style>
   body {
     margin: 0;
@@ -52,6 +53,7 @@
     max-width: 420px;
     text-align: center;
     margin-bottom: 12px;
+    transition: 0.2s;
   }
 
   #romaji {
@@ -92,6 +94,7 @@
   }
 </style>
 </head>
+
 <body>
 
 <h1>Kana Flashcards</h1>
@@ -111,10 +114,14 @@
     <button onclick="nextCard()">Next</button>
     <button onclick="playAudio(currentKana)">Play Audio</button>
   </div>
+
+  <!-- NEW Reset Round Button -->
+  <button onclick="resetRound()" style="background:#e94c4c;">Reset Round</button>
 </div>
 
+
 <script>
-// Expanded kana maps including dakuten (voiced) and handakuten (p- sounds)
+// Hiragana Map
 const hiragana = {
   'a':'あ','i':'い','u':'う','e':'え','o':'お',
   'ka':'か','ki':'き','ku':'く','ke':'け','ko':'こ',
@@ -133,6 +140,7 @@ const hiragana = {
   'wa':'わ','wo':'を','n':'ん'
 };
 
+// Katakana Map
 const katakana = {
   'a':'ア','i':'イ','u':'ウ','e':'エ','o':'オ',
   'ka':'カ','ki':'キ','ku':'ク','ke':'ケ','ko':'コ',
@@ -151,9 +159,8 @@ const katakana = {
   'wa':'ワ','wo':'ヲ','n':'ン'
 };
 
-// Youon set contains both hiragana youon and katakana youon (katakana keys have _k suffix)
+// Youon (Hiragana + Katakana)
 const youon = {
-  // hiragana youon
   'kya':'きゃ','kyu':'きゅ','kyo':'きょ',
   'gya':'ぎゃ','gyu':'ぎゅ','gyo':'ぎょ',
   'sha':'しゃ','shu':'しゅ','sho':'しょ',
@@ -165,7 +172,7 @@ const youon = {
   'pya':'ぴゃ','pyu':'ぴゅ','pyo':'ぴょ',
   'mya':'みゃ','myu':'みゅ','myo':'みょ',
   'rya':'りゃ','ryu':'りゅ','ryo':'りょ',
-  // katakana youon (keys marked with _k)
+
   'kya_k':'キャ','kyu_k':'キュ','kyo_k':'キョ',
   'gya_k':'ギャ','gyu_k':'ギュ','gyo_k':'ギョ',
   'sha_k':'シャ','shu_k':'シュ','sho_k':'ショ',
@@ -181,7 +188,29 @@ const youon = {
 
 let currentSet = hiragana;
 let currentKana = '';
+let deck = [];
 
+// Shuffle using Fisher–Yates
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// Rebuild a fresh shuffled round deck
+function rebuildDeck() {
+  deck = shuffle(Object.keys(currentSet).slice());
+}
+
+// Manual reset
+function resetRound() {
+  rebuildDeck();
+  nextCard();
+}
+
+// Switch tab
 function switchTab(type) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
 
@@ -195,30 +224,36 @@ function switchTab(type) {
     currentSet = youon;
     document.querySelectorAll('.tab')[2].classList.add('active');
   }
+
+  rebuildDeck();
   nextCard();
 }
 
+// Next card (round-robin)
 function nextCard() {
-  const keys = Object.keys(currentSet);
-  const rom = keys[Math.floor(Math.random() * keys.length)];
+  if (deck.length === 0) rebuildDeck(); // new round
+
+  const rom = deck.pop();
   const kana = currentSet[rom];
+
   currentKana = kana;
   document.getElementById('card').innerText = kana;
   document.getElementById('romaji').innerText = rom;
 }
 
+// TTS
 function playAudio(kana) {
-  // speak the kana using the browser TTS (ja-JP). If unavailable, falls back to default voice.
   const utter = new SpeechSynthesisUtterance(kana);
   utter.lang = 'ja-JP';
-  // shorter rate for single syllables
   utter.rate = 0.9;
   speechSynthesis.cancel();
   speechSynthesis.speak(utter);
 }
 
 // Start
+rebuildDeck();
 nextCard();
 </script>
+
 </body>
 </html>
