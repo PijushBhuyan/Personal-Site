@@ -87,6 +87,11 @@
     flex: 1;
   }
 
+  /* 🎉 Make Reset Round button visible + styled */
+  .buttons > button {
+    background: #e94c4c;
+  }
+
   @media (max-width:420px){
     .tabs { gap: 6px; }
     .tab { padding: 8px; font-size: 14px; }
@@ -115,8 +120,8 @@
     <button onclick="playAudio(currentKana)">Play Audio</button>
   </div>
 
-  <!-- NEW Reset Round Button -->
-  <button onclick="resetRound()" style="background:#e94c4c;">Reset Round</button>
+  <!-- Reset Round Button -->
+  <button onclick="resetRound()">Reset Round</button>
 </div>
 
 
@@ -159,7 +164,7 @@ const katakana = {
   'wa':'ワ','wo':'ヲ','n':'ン'
 };
 
-// Youon (Hiragana + Katakana)
+// Youon Map
 const youon = {
   'kya':'きゃ','kyu':'きゅ','kyo':'きょ',
   'gya':'ぎゃ','gyu':'ぎゅ','gyo':'ぎょ',
@@ -190,7 +195,6 @@ let currentSet = hiragana;
 let currentKana = '';
 let deck = [];
 
-// Shuffle using Fisher–Yates
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -199,18 +203,15 @@ function shuffle(arr) {
   return arr;
 }
 
-// Rebuild a fresh shuffled round deck
 function rebuildDeck() {
   deck = shuffle(Object.keys(currentSet).slice());
 }
 
-// Manual reset
 function resetRound() {
   rebuildDeck();
   nextCard();
 }
 
-// Switch tab
 function switchTab(type) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
 
@@ -229,9 +230,8 @@ function switchTab(type) {
   nextCard();
 }
 
-// Next card (round-robin)
 function nextCard() {
-  if (deck.length === 0) rebuildDeck(); // new round
+  if (deck.length === 0) rebuildDeck();
 
   const rom = deck.pop();
   const kana = currentSet[rom];
@@ -241,7 +241,6 @@ function nextCard() {
   document.getElementById('romaji').innerText = rom;
 }
 
-// TTS
 function playAudio(kana) {
   const utter = new SpeechSynthesisUtterance(kana);
   utter.lang = 'ja-JP';
@@ -250,7 +249,6 @@ function playAudio(kana) {
   speechSynthesis.speak(utter);
 }
 
-// Start
 rebuildDeck();
 nextCard();
 </script>
